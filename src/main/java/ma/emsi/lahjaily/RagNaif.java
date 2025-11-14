@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Scanner;
 
 public class RagNaif {
 
@@ -49,26 +50,26 @@ public class RagNaif {
 
         // === PHASE 1: ENREGISTREMENT (Ingestion) ===
         System.out.println("Phase 1 : Démarrage de l'ingestion...");
-        Path documentPath = getPath("rag.pdf"); // Assurez-vous que le PDF est dans src/main/resources
+        Path documentPath = getPath("rag.pdf"); // Utilisation de votre nom de fichier
         DocumentParser parser = new ApacheTikaDocumentParser();
         Document document = FileSystemDocumentLoader.loadDocument(documentPath, parser);
         DocumentSplitter splitter = DocumentSplitters.recursive(300, 30);
         List<TextSegment> segments = splitter.split(document);
-        EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel();
+        EmbeddingModel embeddingModel = new AllMiniLmL6V2EmbeddingModel(); // Utilisation de votre modèle ONNX
         Response<List<Embedding>> embeddingsResponse = embeddingModel.embedAll(segments);
         List<Embedding> embeddings = embeddingsResponse.content();
         EmbeddingStore<TextSegment> embeddingStore = new InMemoryEmbeddingStore<>();
         embeddingStore.addAll(embeddings, segments);
         System.out.println("Phase 1 : Ingestion terminée. " + segments.size() + " segments ajoutés.");
 
-        // === PHASE 2: UTILISATION (Récupération avec 1 question) ===
+        // === PHASE 2: UTILISATION (Récupération) ===
 
         // 1. Création du ContentRetriever
         ContentRetriever contentRetriever = EmbeddingStoreContentRetriever.builder()
                 .embeddingStore(embeddingStore)
                 .embeddingModel(embeddingModel)
-                .maxResults(2) // 2 résultats les plus pertinents
-                .minScore(0.5) // Score de similarité minimum
+                .maxResults(2)
+                .minScore(0.5)
                 .build();
 
         // 2. Ajout de la mémoire
@@ -81,13 +82,22 @@ public class RagNaif {
                 .contentRetriever(contentRetriever) // Connexion du RAG
                 .build();
 
-        // 4. Poser la question unique codée en dur
-        System.out.println("\nPhase 2 : Test avec une question unique.");
-        String question = "Quelle est la signification de 'RAG' ; à quoi ça sert ?";
+        // 4. Boucle de chat interactive (REMPLACEMENT DE LA QUESTION UNIQUE)
+        System.out.println("\n==================================================");
+        System.out.println("Bonjour ! Posez vos questions sur le document RAG.");
+        System.out.println("Tapez 'stop' pour quitter.");
 
-        System.out.println("Question : " + question);
-        String reponse = assistant.chat(question);
-        System.out.println("Assistant : " + reponse);
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (true) {
+                System.out.print("\nVous : ");
+                String question = scanner.nextLine();
+                if (question.equalsIgnoreCase("stop")) {
+                    break;
+                }
+                String reponse = assistant.chat(question);
+                System.out.println("Assistant : " + reponse);
+            }
+        }
 
         System.out.println("\nProgramme terminé.");
     }
