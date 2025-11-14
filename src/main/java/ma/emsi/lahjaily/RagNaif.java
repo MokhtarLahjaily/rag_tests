@@ -27,6 +27,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Scanner;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class RagNaif {
 
@@ -40,11 +43,26 @@ public class RagNaif {
         }
     }
 
+    // ==== MÉTHODE A AJOUTER POUR LE LOGGING ====
+    private static void configureLogger() {
+        // Configure le logger sous-jacent (java.util.logging)
+        Logger packageLogger = Logger.getLogger("dev.langchain4j");
+        packageLogger.setLevel(Level.FINE); // Ajuster niveau
+        // Ajouter un handler pour la console pour faire afficher les logs
+        ConsoleHandler handler = new ConsoleHandler();
+        handler.setLevel(Level.FINE);
+        packageLogger.addHandler(handler);
+    }
+
     public static void main(String[] args) {
+        // ==== 1. APPEL DU CONFIGURATEUR DE LOGGER ====
+        configureLogger();
+
         // 0. Créer le ChatModel
         ChatModel model = GoogleAiGeminiChatModel.builder()
                 .apiKey(System.getenv("GEMINI_KEY"))
                 .modelName("gemini-2.5-flash")
+                .logRequestsAndResponses(true)
                 .temperature(0.3)
                 .build();
 
